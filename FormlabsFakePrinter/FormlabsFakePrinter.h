@@ -28,7 +28,11 @@ struct print_layer_t {
 	std::string image_url;
 };
 
+struct summary_data_t {
+	uint32_t overall_height = 0;
+};
+
 input_config_t process_inputs(int argc, const char* argv[]);
 
-bool processLayer(input_config_t config, std::ifstream& file);
-bool process_csv(input_config_t config, const std::string& filename);
+bool processLayer(input_config_t config, std::ifstream& file, summary_data_t* summary);
+bool process_csv(input_config_t config, summary_data_t* summary);
