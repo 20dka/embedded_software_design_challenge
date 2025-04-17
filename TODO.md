@@ -1,8 +1,8 @@
 TODO:
-- [] read inputs
-    - [] filename
-    - [] output folder
-    - [] mode
+- [x] read inputs
+    - [x] filename
+    - [x] output folder
+    - [x] mode
 
 - [] read csv
 - [] preprocess csv
