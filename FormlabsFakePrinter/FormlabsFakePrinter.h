@@ -12,6 +12,23 @@ struct input_config_t {
 	print_mode_t print_mode;
 };
 
+enum layer_error_t {
+	SUCCESS,
+	TEMP_OUT_OF_RANGE,
+	TIMED_OUT,
+	UNKNOWN_ERROR
+};
+
+struct print_layer_t {
+	layer_error_t layer_error = UNKNOWN_ERROR;
+	uint32_t layer_number = 0;
+	uint32_t layer_height = 0; // stored in um
+	uint32_t layer_time = 0; //stored in s
+	std::string file_name;
+	std::string image_url;
+};
+
 input_config_t process_inputs(int argc, const char* argv[]);
 
-config_t process_inputs(int argc, const char* argv[]);
+bool processLayer(input_config_t config, std::ifstream& file);
+bool process_csv(input_config_t config, const std::string& filename);

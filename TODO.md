@@ -4,7 +4,7 @@ TODO:
     - [x] output folder
     - [x] mode
 
-- [] read csv
+- [x] read csv
 - [] preprocess csv
 - [] process csv (for each layer)
     - [] ask for input if needed
