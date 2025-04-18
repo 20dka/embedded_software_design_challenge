@@ -8,8 +8,8 @@ TODO:
 - [] preprocess csv
 - [x] process csv (for each layer)
     - [x] ask for input if needed
-    - [] download current layer image
-    - [] "print" layer (save to fs)
+    - [x] download current layer image
+    - [x] "print" layer (save to fs)
     - [x] ask for input if needed
 
 - [] generate summary
