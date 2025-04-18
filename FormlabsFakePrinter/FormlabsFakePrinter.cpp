@@ -16,7 +16,7 @@ int main(int argc, const char* argv[])
 
 	if (!config.valid)
 	{
-		std::cout << "The entered input is not valid!\n";
+		std::cerr << "The entered input is not valid!\n";
 		return 1;
 	}
 
@@ -27,7 +27,7 @@ int main(int argc, const char* argv[])
 		return 1;
 	}
 
-	//TODO: present 'summary' (my idea was a .html file)
+	summarize(summary);
 }
 
 input_config_t process_inputs(int argc, const char* argv[])
@@ -40,6 +40,7 @@ input_config_t process_inputs(int argc, const char* argv[])
 	//TODO: if argc is 1, prompt user for parameters
 	if (argc != 4)
 	{
+		std::cerr << "Malformed parameters! <print name> <destination path> <mode>" << std::endl;
 		return config;
 	}
 
@@ -63,27 +64,24 @@ input_config_t process_inputs(int argc, const char* argv[])
 	return config;
 }
 
-layer_error_t string_to_layer_error(std::string str) {
-	if (str == "SUCCESS")
-	{
-		return SUCCESS;
-	}
-	else if (str == "TEMP_OUT_OF_RANGE")
-	{
-		return TEMP_OUT_OF_RANGE;
-	}
-	else if (str == "TIMED_OUT")
-	{
-		return TIMED_OUT;
-	}
-	else
-	{
-		return UNKNOWN_ERROR;
-	}
-}
-
 uint32_t layer_time_to_sec(std::string str) {
-	return 0; //TODO: add implementation
+	uint32_t seconds = 0;
+
+	std::istringstream stream(str);
+	std::string segment;
+
+	//get first segment, assume seconds
+	if (getline(stream, segment, '_')) {
+		seconds = std::strtol(segment.substr(0, segment.size() - 2).c_str(), NULL, 10);
+	}
+
+	//get any later segments, offset previous ones
+	while (getline(stream, segment, '_')) {
+		seconds *= 60;
+		seconds += std::strtol(segment.substr(0, segment.size() - 2).c_str(), NULL, 10);
+	}
+
+	return seconds;
 }
 
 bool processLayer(input_config_t config, std::ifstream& file, summary_data_t* summary)
@@ -92,14 +90,16 @@ bool processLayer(input_config_t config, std::ifstream& file, summary_data_t* su
 
 	print_layer_t layer_info;
 
-	if (!std::getline(file, line)) {
+	if (!std::getline(file, line))
+	{
 		return true;
 	}
 
 	std::stringstream ss(line);
 	std::string cell;
 	int i = 0;
-	while (std::getline(ss, cell, ',')) {
+	while (std::getline(ss, cell, ','))
+	{
 		switch (i)
 		{
 		case 0:
@@ -131,20 +131,27 @@ bool processLayer(input_config_t config, std::ifstream& file, summary_data_t* su
 		return true;
 	}
 
-	if (config.print_mode ==  SUPERVISED)
+	if (config.print_mode == SUPERVISED)
 	{
 		std::cout << "Waiting for user input" << std::endl;
 		std::string dummy;
 		std::getline(std::cin, dummy);
 	}
 
-	//TODO: error handling for download
-	download_wrapper.download(layer_info.image_url, config.destination_path + layer_info.file_name);
+	std::cout << "Processing layer " << layer_info.layer_number << std::endl;
 
-	if (config.print_mode == SUPERVISED)
+	summary->overall_height += layer_info.layer_height;
+	summary->layer_count += 1;
+
+	bool download_error = download_wrapper.download(layer_info.image_url, config.destination_path + layer_info.file_name);
+
+	if (layer_info.layer_error != SUCCESS || download_error)
 	{
-		if (layer_info.layer_error != SUCCESS) {
-			std::cout << "Layer error occurred! End FakePrint?(Y/N)" << std::endl;
+		summary->failed_layer_count += 1;
+
+		if (config.print_mode == SUPERVISED)
+		{
+			std::cout << "Layer error occurred (" << layer_error_to_string(layer_info.layer_error) << ")!End FakePrint ? (Y / N)" << std::endl;
 
 			std::string prompt;
 			std::getline(std::cin, prompt);
@@ -155,7 +162,7 @@ bool processLayer(input_config_t config, std::ifstream& file, summary_data_t* su
 		}
 	}
 
-	//TODO: add data to 'summary'
+	std::cout << "Printing for " << layer_info.layer_time << " seconds" << std::endl;
 
 	return false;
 }
@@ -179,5 +186,12 @@ bool process_csv(input_config_t config, summary_data_t* summary)
 	while (!processLayer(config, file, summary));
 
 	file.close();
+	return false;
+}
+
+bool summarize(summary_data_t summary)
+{
+	printf("printed %d layers, %d failed. overall height: %.3fmm\r\n", summary.layer_count, summary.failed_layer_count, static_cast<float>(summary.overall_height) / 1000.0);
+
 	return false;
 }

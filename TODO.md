@@ -12,4 +12,4 @@ TODO:
     - [x] "print" layer (save to fs)
     - [x] ask for input if needed
 
-- [] generate summary
+- [x] generate summary
