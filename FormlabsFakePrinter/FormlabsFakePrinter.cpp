@@ -1,9 +1,9 @@
 #include <iostream>
 #include <string>
-#include "FormlabsFakePrinter.h"
-
 #include <fstream>
 #include <sstream>
+#include <filesystem>
+#include "FormlabsFakePrinter.h"
 #include "DownloadWrapper.h"
 
 DownloadWrapper download_wrapper;
@@ -20,14 +20,23 @@ int main(int argc, const char* argv[])
 		return 1;
 	}
 
-	summary_data_t summary;
+	std::error_code ec;
+	if (!std::filesystem::create_directory(config.destination_path, ec))
+	{
+		std::cerr << "Failed creating output directory: " << ec.message() << std::endl;
+	}
 
+
+	summary_data_t summary;
+	
 	if (process_csv(config, &summary))
 	{
-		return 1;
+		return 2;
 	}
 
 	summarize(summary);
+
+	return 0;
 }
 
 input_config_t process_inputs(int argc, const char* argv[])
@@ -72,13 +81,13 @@ uint32_t layer_time_to_sec(std::string str) {
 
 	//get first segment, assume seconds
 	if (getline(stream, segment, '_')) {
-		seconds = std::strtol(segment.substr(0, segment.size() - 2).c_str(), NULL, 10);
+		seconds = std::strtoul(segment.substr(0, segment.size() - 2).c_str(), NULL, 10);
 	}
 
 	//get any later segments, offset previous ones
 	while (getline(stream, segment, '_')) {
 		seconds *= 60;
-		seconds += std::strtol(segment.substr(0, segment.size() - 2).c_str(), NULL, 10);
+		seconds += std::strtoul(segment.substr(0, segment.size() - 2).c_str(), NULL, 10);
 	}
 
 	return seconds;
@@ -143,7 +152,7 @@ bool processLayer(input_config_t config, std::ifstream& file, summary_data_t* su
 	summary->overall_height += layer_info.layer_height;
 	summary->layer_count += 1;
 
-	bool download_error = download_wrapper.download(layer_info.image_url, config.destination_path + layer_info.file_name);
+	bool download_error = download_wrapper.download(layer_info.image_url, (std::filesystem::path(config.destination_path) / std::filesystem::path(layer_info.file_name)).string());
 
 	if (layer_info.layer_error != SUCCESS || download_error)
 	{
